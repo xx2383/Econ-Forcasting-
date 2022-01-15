@@ -1,6 +1,6 @@
 # Econ-Forcasting
 
-	The outbreak of COVID-19 since 2019 has significantly altered the global economic status, with a large number of businesses shut down 
+The outbreak of COVID-19 since 2019 has significantly altered the global economic status, with a large number of businesses shut down 
   and the unprecedented four-time trigger of the circuit breaker in the US stock market. China, as the place firstly struck by the COVID-19
   outbreak, has experienced a plummet in economic condition and has been gradually dispensing the impact of the virus with work resumption. 
   Despite this trend, it is still unclear about the future trend of China's economy. Comparing to SARS, also a type of coronavirus that 
