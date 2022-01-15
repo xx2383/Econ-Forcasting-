@@ -1,0 +1,119 @@
+---
+title: "UCLA"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r}
+library(vars)
+library(readxl)
+library(corrgram)
+library(zoo)
+library(fanplot)
+library(tseries)
+library(forecast)
+China <- read_excel("~/Desktop/科研/UCLA/report/data/经济数据.xlsx")
+corrgram(China, order = TRUE, lower.panel = panel.shade, upper.panel = panel.cor, 
+		text.panel = panel.txt, main = "Correlogram of data")
+
+# variables
+Date=China$Date
+I_Added=China$I_Added
+I_Revenue=China$I_Revenue
+P_Revenue=China$P_Revenue
+E_Revenue=China$E_Revenue
+F_Invest=China$F_Invest
+Estate_I=China$Estate_I
+Estate_S=China$Estate_S
+Retail=China$Retail
+PPI=China$PPI
+Budget=China$Budget
+PMI_N=China$PMI_N
+PMI_S=China$PMI_S
+COV = China$COVID
+XGuan = China$Baidu_Xinguan
+Box = China$Box
+export = China$export
+
+
+# Box=China$Box
+
+# after expurgation: remove P_Revenue and PMI_S
+corrgram(data.frame(Retail,Estate_S,Box,I_Revenue,export), order = TRUE, lower.panel = panel.shade, upper.panel = panel.cor, 
+		text.panel = panel.txt, main = "Correlogram of data")
+
+# OLS
+ols = lm(Retail ~ Estate_S+Box+I_Revenue+export)
+summary(ols)
+ols2 = lm(Estate_S ~ Retail+Box+I_Revenue+export)
+summary(ols2)
+ols3 = lm(export ~ Retail+Box+I_Revenue+Estate_S)
+summary(ols3)
+
+# ts variables
+begin = c(2007,1)
+I_Added = ts(China$I_Added, start = begin, end = c(2020,7), frequency = 12)
+I_Revenue = ts(China$I_Revenue, start = begin, end = c(2020,7), frequency = 12)
+E_Revenue = ts(China$E_Revenue, start = begin, end = c(2020,7), frequency = 12)
+F_Invest = ts(China$F_Invest, start = begin, end = c(2020,7), frequency = 12)
+Estate_I = ts(China$Estate_I, start = begin, end = c(2020,7), frequency = 12)
+Estate_S = ts(China$Estate_S, start = begin, end = c(2020,7), frequency = 12)
+Retail = ts(China$Retail, start = begin, end = c(2020,7), frequency = 12)
+PPI = ts(China$PPI, start = begin, end = c(2020,7), frequency = 12)
+Budget = ts(China$Budget, start = begin, end = c(2020,7), frequency = 12)
+PMI_N = ts(China$PMI_N, start = begin, end = c(2020,7), frequency = 12)
+COV = ts(China$COVID, start = begin, end = c(2020,7), frequency = 12)
+XGuan= ts(China$Baidu_Xinguan, start = begin, end = c(2020,7), frequency = 12)
+Baidu_WZ = ts(China$Baidu_WZ, start = begin, end = c(2020,7), frequency = 12)
+Box = ts(China$Box, start = begin, end = c(2020,7), frequency = 12)
+export = ts(China$export, start = begin, end = c(2020,7), frequency = 12)
+
+
+
+
+### ts data frame
+China_ts = data.frame(Retail,Estate_S,Box,I_Revenue,export)
+China_ts = na.spline(China_ts, na.rm = TRUE)
+
+
+# ###Differencing (to make it stationary) and diagnostic
+# I_Revenue = diff(I_Revenue);
+pp.test(China_ts[,1])
+
+# Estate_S = diff(Estate_S);
+pp.test(China_ts[,2])
+
+# Retail = diff(Retail);
+pp.test(China_ts[,3])
+
+pp.test(China_ts[,4])
+
+pp.test(China_ts[,5])
+
+
+autoplot(cbind(Retail,Estate_S,export), xlab = "Year", ylab = "Index", main = "The trend of the three variables")
+
+
+### lag selection
+lagselect = VARselect(China_ts, lag.max = 10, type = "const")
+lagselect$selection
+
+### VAR model
+lag = 2
+Vmodel = VAR(China_ts, p = lag,type = "const", season = NULL, exogen = NULL)
+summary(Vmodel)
+
+
+### forecast
+forecast = predict(Vmodel, n.ahead = 12, ci = 0.95)
+tail(China_ts)
+forecast
+fanchart(forecast, names = "Estate_S", main = "Fanchart of The Total Real Estate Sales", ylab = "Estate_S")
+fanchart(forecast, names = "Retail", main = "Fanchart of The Total Retail Sales of Consumer Goods", ylab = "Retail")
+fanchart(forecast, names = "export", main = "Fanchart of Exports", ylab = "export")
+### diagnostic
+##Autocorrelation
+serial.test(Vmodel, lags.pt = 10, type = "PT.asymptotic")
